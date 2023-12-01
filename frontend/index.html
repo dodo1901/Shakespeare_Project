@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shakespeare Character Tool</title>
+    <style>
+          /* Styling for the body of the page: font, background, and layout */
+        body {
+            font-family: 'Times New Roman', serif;
+            background-color: #f4f1e9;
+            background-image: url('https://thehashtag.us/wp-content/uploads/2018/04/wshake.jpeg');
+            background-position: right;
+            background-repeat: no-repeat;
+            background-size: 105%;
+            background-size: cover;
+            background-attachment: fixed;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 40px;
+            margin-top: 30px;
+        }
+        /* Styling for sections including user input */
+        .input-section {
+            background-color: #faf4ed;
+            border: 2px solid #d3c1a5;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        /* Styling for selecting elements and input elements */
+        select, input[type="text"] {
+            font-family: 'Times New Roman', serif;
+            padding: 5px 10px;
+            margin: 0 10px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #d3c1a5;
+            background-color: #fff;
+        }
+        button {
+            font-family: 'Times New Roman', serif;
+            background-color: #b8a58b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #9c8c76;
+        }
+        .response-area {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #d3c1a5;
+            background-color: #faf4ed;
+            padding: 20px;
+            width: 60%;
+            min-height: 100px;
+            overflow-y: auto;
+            font-family: 'Times New Roman', serif;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Shakespeare Character Comparison Tool</h1>
+
+    <!-- Character Comparison Section -->
+    <div class="input-section">
+        <label>From the Shakespeare play </label>
+        <!-- Dropdown to select a play -->
+        <select id="playSelect1" onchange="syncDropdowns()">
+            <option value="Macbeth">Macbeth</option>
+            <option value="Troilus and Cressida">Troilus and Cressida</option>
+            <option value="Twelfth Night">Twelfth Night</option>
+            <option value="Henry IV">Henry IV</option>
+            <option value="The Tempest">The Tempest</option>
+            
+        </select>
+        I would like to compare 
+        <input type="text" id="character1" placeholder="Character 1">
+        and 
+        <input type="text" id="character2" placeholder="Character 2">
+        <!-- Button to trigger the comparison -->
+        <button id="compareButton">Compare</button>
+    </div>
+    <div id="compareResponseArea" class="response-area"></div>
+
+    <!-- Learn More Section -->
+    <div class="input-section">
+        From the Shakespeare play 
+        <!-- Dropdown to select a play -->
+        <select id="playSelect2" onchange="syncDropdowns()">
+            <option value="Macbeth">Macbeth</option>
+            <option value="Troilus and Cressida">Troilus and Cressida</option>
+            <option value="Twelfth Night">Twelfth Night</option>
+            <option value="Henry IV">Henry IV</option>
+            <option value="The Tempest">The Tempest</option>
+        </select>
+        I would like to learn more about 
+        <input type="text" id="characterLearn" placeholder="Character Name">
+        <!-- Button to trigger the learning process -->
+        <button id="learnButton">Learn</button>
+    </div>
+    <div id="learnResponseArea" class="response-area"></div>
+
+    <script>
+
+        // Add event listeners for buttons
+        document.getElementById('compareButton').addEventListener('click', function() {
+            // Retrieve character names and play for comparison
+            const Fcharacter = document.getElementById('character1').value.trim()
+            const Scharacter = document.getElementById('character2').value.trim()
+            const play = document.getElementById('playSelect1').value.trim()
+            // Construct prompt for GPT 
+            const prompt = `In William Shakespeare's play "${play}", compare the characters ${Fcharacter} and ${Scharacter}. If either ${Fcharacter} or ${Scharacter} is not a character in "${play}", respond with "Please enter valid characters". Provide accurate and concise information. Do not fabricate details.`; 
+            const responseArea = document.getElementById('compareResponseArea');
+                        
+            responseArea.innerText = ''; // Clear previous response
+
+            // Send POST request to Flask backend
+            fetch('/api/gpt-query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt: prompt })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.response) {
+                    // Sets respopnse of text box to the response from GPT
+                    responseArea.innerText = data.response;
+                } else {
+                    responseArea.innerText = 'Received unexpected response format.';
+                }
+            })
+            .catch(error => { // Handle errors
+                console.error('Error:', error);
+                responseArea.innerText = 'Error: Unable to process request.';
+            });
+
+        });
+
+        //Similar process but for bottom element. Event listeners for buttons
+        document.getElementById('learnButton').addEventListener('click', function() {
+            // Retrieve character names and play for comparison
+            const character = document.getElementById('characterLearn').value.trim()
+            const play = document.getElementById('playSelect2').value.trim()
+            const prompt = `From William Shakespeare's play "${play}", tell me in a bit about ${character}. If ${character} is not a character in "${play}", respond with "Please enter a valid character". Provide accurate and concise information. Do not fabricate details.`; 
+            const responseArea = document.getElementById('learnResponseArea');
+                        
+            responseArea.innerText = '';
+
+            // Send POST request to Flask backend
+            fetch('/api/gpt-query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt: prompt })
+            })
+            .then(response => response.json())
+            .then(data => {
+                
+                if (data && data.response) {
+                    responseArea.innerText = data.response; // Display data
+                } else {
+                    responseArea.innerText = 'Received unexpected response format.';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                responseArea.innerText = 'Error: Unable to process request.';
+            });
+        });
+
+    </script>
+</body>
+</html>
